@@ -1,32 +1,126 @@
-var shortship_in_left = Math.floor(Math.random() * 2);
-var left = [];
-var right = [];
-var miss_field = [Math.floor(Math.random() * 15)];
-miss_field[1] = Math.floor(Math.random() * (14 - miss_field[0] + 1))
-left[0] = miss_field[0] + 1
-right[0] = miss_field[0] + 4 - shortship_in_left
-left[1] = right[0] + miss_field[1] + 1
-right[1] = left[1] + 3 + shortship_in_left - 1
-var guess;
-var hits = 0;
-var num_guess = 0;
-var isSunk = false;
+var view = {
+    displayMessage: function(msg) {
+        var messageArea = document.getElementById("messageArea");
+        messageArea.innerHTML = msg;
+    },
 
-while(isSunk == false){
-    guess = prompt("Ready, aim, fire! (enter a number from 0-9):");
-    if(guess < 0 || guess > 20){
-        alert("Please enter a valid cell number!");
-    }else{
-        num_guess = num_guess + 1;
-        if(guess >= left[0] && guess <= right[0]  || guess >= left[1] &&  guess <= right[1]){
-            alert("HIT!");
-            hits = hits + 1;
-            if(hits == 7){
-                isSunk = true;
-                alert("Congratulations! You are our hero");
+    displayHit: function(location) {
+        var cell = document.getElementById(location);
+        cell.setAttribute("class", "hit");
+    },
+
+    displayMiss: function(location) {
+        var cell = document.getElementById(location);
+        cell.setAttribute("class", "miss");
+    }
+};
+
+var model = {
+    boardSize: 7,
+    numShips: 3,
+    shipLength: 3,
+    shipsSunk: 0,
+    ships: [
+        { locations: ["06", "16", "26"], hits:["","",""]},
+        { locations: ["24", "34", "44"], hits:["","",""]},
+        { locations: ["10", "11", "12"], hits:["","",""]}
+    ],
+    fire: function(guess) {
+        for (var i = 0; i < this.numShips; i++){
+            var ship = this.ships[i];
+            var index = ship.locations.indexOf(guess);
+
+            if (ship.hits[index] === "hit") {
+                view.displayMessage("Oops, you already hit the ocation!");
+                return true;
+            } else if (index >= 0){
+                ship.hits[index] = "hit";
+                view.displayHit(guess);
+                view.displayMessage("HIT！");
+
+                if (this.isSunk(ship)) {
+                    view.displayMessage("You sank my battleship!");
+                    this.shipsSunk++;
+                }
+                return true;
             }
-        }else{
-            alert("MISS");
+        }
+    view.displayMiss(guess);
+    view.displayMessage("You missed.");
+    return false;
+    },
+    isSunk: function(ship) {
+        for (var i = 0; i < this.shipLength; i++) {
+            if (ship.hits[i] != "hit") {
+                return false;
+            }
+        }
+        return true;
+    },
+}
+
+var controller = {
+    guesses: 0,
+
+    processGuess: function(guess) {
+        var location = parseGuess(guess);
+        if (location){
+            this.guesses++;
+            var hit = model.fire(location);
+            if (hit && model.shipsSunk === model.numShips) {
+                view.displayMessage("You sank all my battleships, in "+ this.guesses + "guesses");
+            }
         }
     }
+}
+
+function parseGuess(guess) {
+    var alphabet = ["A", "B", "C", "D", "E", "F", "G"];
+
+    if (guess === null || guess.length !== 2) {
+        alert("Oops, please enter a letter and a number on the board.");
+    } else {
+        var firstChar = guess.charAt(0);
+        var row = alphabet.indexOf(firstChar);
+        var column = guess.charAt(1);
+
+        if (isNaN(row) || isNaN(column)) {
+            alert("Oops, that isn't on the board.");
+        } else if (row < 0 || row >= model.boardSize || column < 0 || column >= model.boardSize) {
+            alert("Oops, that's off the board!");
+        } else {
+            return row + column;
+        }
+    }
+    return null;
+}
+
+function handleFireButton(){
+    var guessInput = document.getElementById("guessInput");
+    var guess = guessInput.value.toUpperCase();
+
+    controller.processGuess(guess);
+
+    guessInput.value = "";
+}
+
+function handleKeyPress(e){
+    var handleFireButton = document.getElementById("fireButton");
+
+    e = e || window.event
+
+    if (e.keyCode === 13) {
+        handleFireButton.click();
+        return false;
+    }
+}
+
+window.onload = init;
+
+function init(){
+    var fireButton = document.getElementById("fireButton");
+    fireButton.onclick = handleFireButton;
+
+    var guessInput = document.getElementById("guessInput");
+    guessInput.onkeypress = handleKeyPress;
 }

@@ -7,4 +7,6 @@ def hello(request):
 def Battleship(request):
     context = {}
     context['hello'] = 'Hello World!'
+    context['rows'] =  [str(i) for i in range(7)]
+    context['columns'] =  [str(i) for i in range(7)]
     return render(request, 'Battleship.html',context)
